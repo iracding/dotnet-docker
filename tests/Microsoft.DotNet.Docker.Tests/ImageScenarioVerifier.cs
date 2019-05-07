@@ -120,12 +120,20 @@ namespace Microsoft.DotNet.Docker.Tests
 
             try
             {
-                _dockerHelper.Run(
-                    image: _imageData.GetImage(DotNetImageType.SDK, _dockerHelper),
-                    name: containerName,
-                    command: $"dotnet new {appType} --framework netcoreapp{_imageData.Version}",
-                    workdir: "/app",
-                    skipAutoCleanup: true);
+                try
+                {
+                    _dockerHelper.Run(
+                        image: _imageData.GetImage(DotNetImageType.SDK, _dockerHelper),
+                        name: containerName,
+                        command: $"dotnet new {appType} --framework netcoreapp{_imageData.Version}",
+                        workdir: "/app",
+                        skipAutoCleanup: true);
+                }
+                catch (InvalidOperationException e) when (e.Message.Contains("139"))
+                {
+                    _dockerHelper.Copy($"{containerName}:/app/dotnet.core", "/core");
+                    throw;
+                }
 
                 _dockerHelper.Copy($"{containerName}:/app", appDir);
 
